@@ -8,6 +8,8 @@ Analyzes changes between two git refs across three dimensions:
 2. Test coverage
 3. Abstractions and concepts
 
+Uses embedding-based similarity to dimension descriptions.
+
 Usage: ./analyze-changes <git-ref-a> <git-ref-b>
 Output: JSON with scores from -5 to +5 for each dimension
 """
@@ -23,17 +25,20 @@ from typing import Dict, Any
 import urllib.request
 import urllib.error
 
+# Import our embedding module
+from generate_embeddings import generate_embedding, load_embedding, cosine_similarity
+
 # Configuration
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
 MODEL = os.environ.get('MODEL', 'gemini-2.0-flash-exp')
 
 SCRIPT_DIR = Path(__file__).parent.resolve()
-PROMPTS_DIR = SCRIPT_DIR / 'prompts'
+DIMENSION_EMBEDDINGS_DIR = SCRIPT_DIR / 'dimension-descriptions'
 
 DIMENSIONS = [
-    {'name': 'coupling', 'file': 'coupling-analysis.md'},
-    {'name': 'test_coverage', 'file': 'test-coverage-analysis.md'},
-    {'name': 'abstraction', 'file': 'abstraction-analysis.md'}
+    {'name': 'coupling', 'label': 'Module Coupling'},
+    {'name': 'test_coverage', 'label': 'Test Coverage'},
+    {'name': 'abstraction', 'label': 'Abstractions and Concepts'}
 ]
 
 
@@ -67,103 +72,200 @@ def get_diff_stats(ref_a: str, ref_b: str) -> str:
         sys.exit(1)
 
 
-def load_prompt(prompt_file: str) -> str:
-    """Load analysis prompt from file"""
-    prompt_path = PROMPTS_DIR / prompt_file
-    try:
-        return prompt_path.read_text(encoding='utf-8')
-    except Exception as e:
-        print(f'Error loading prompt {prompt_file}: {e}', file=sys.stderr)
-        sys.exit(1)
-
-
-def analyze_dimension(dimension: str, prompt: str, diff: str, stats: str) -> Dict[str, Any]:
-    """Call Google Gemini API to analyze diff according to dimension prompt"""
+def call_gemini(prompt: str, response_format: str = 'text') -> str:
+    """Call Google Gemini API with a prompt"""
     if not GEMINI_API_KEY:
         print('Error: GEMINI_API_KEY environment variable not set', file=sys.stderr)
         sys.exit(1)
 
-    # Truncate diff if too long (Gemini has large context but still limit for safety)
-    diff_content = diff[:100000]
-    truncated_msg = '\n... (diff truncated)' if len(diff) > 100000 else ''
-
-    analysis_prompt = f"""{prompt}
-
-## Git Diff to Analyze
-
-### Diff Statistics
-```
-{stats}
-```
-
-### Full Diff
-```diff
-{diff_content}{truncated_msg}
-```
-
-Please analyze this git diff according to the instructions above and return ONLY a valid JSON object in the format specified, with no additional text or markdown formatting."""
-
     try:
-        # Prepare API request for Gemini
         request_data = {
             'contents': [{
                 'parts': [{
-                    'text': analysis_prompt
+                    'text': prompt
                 }]
             }],
             'generationConfig': {
-                'temperature': 0.2,
+                'temperature': 0.3,
                 'maxOutputTokens': 8192,
-                'responseMimeType': 'application/json'
             }
         }
 
-        # Gemini API URL includes the API key as a query parameter
+        if response_format == 'json':
+            request_data['generationConfig']['responseMimeType'] = 'application/json'
+
         api_url = f'https://generativelanguage.googleapis.com/v1beta/models/{MODEL}:generateContent?key={GEMINI_API_KEY}'
 
         req = urllib.request.Request(
             api_url,
             data=json.dumps(request_data).encode('utf-8'),
-            headers={
-                'Content-Type': 'application/json'
-            },
+            headers={'Content-Type': 'application/json'},
             method='POST'
         )
 
         with urllib.request.urlopen(req) as response:
             data = json.loads(response.read().decode('utf-8'))
 
-            # Extract content from Gemini response
             if 'candidates' in data and len(data['candidates']) > 0:
-                content = data['candidates'][0]['content']['parts'][0]['text']
+                return data['candidates'][0]['content']['parts'][0]['text']
             else:
                 raise Exception('No response from Gemini API')
 
-            # Extract JSON from response (handle markdown code blocks if present)
-            json_match = re.search(r'```json\s*([\s\S]*?)\s*```', content)
-            if not json_match:
-                json_match = re.search(r'```\s*([\s\S]*?)\s*```', content)
-
-            json_str = json_match.group(1) if json_match else content
-            result = json.loads(json_str.strip())
-
-            return result
-
     except urllib.error.HTTPError as e:
         error_text = e.read().decode('utf-8')
-        print(f'Error analyzing {dimension}: HTTP {e.code} - {error_text}', file=sys.stderr)
+        raise Exception(f'Gemini API error: HTTP {e.code} - {error_text}')
+
+
+def generate_change_description(diff: str, stats: str) -> str:
+    """Generate detailed prose describing the changes"""
+    diff_content = diff[:100000]
+    truncated_msg = '\n... (diff truncated)' if len(diff) > 100000 else ''
+
+    prompt = f"""Analyze this git diff and write a comprehensive, detailed description of what changed.
+
+Focus on:
+- What code was added, modified, or removed
+- Dependencies and imports (new or removed)
+- Module structure and organization changes
+- Testing changes (new tests, modified tests, removed tests)
+- Abstraction changes (new classes, functions, interfaces, design patterns)
+- Coupling and relationships between modules
+- Data structures and their access patterns
+- API and interface changes
+- Error handling and edge cases
+- Code complexity changes
+
+Write in detailed, technical prose (500-1000 words). Be specific about the changes, mentioning file names, function names, and concrete details. This description will be used to analyze the change across multiple dimensions.
+
+## Diff Statistics
+```
+{stats}
+```
+
+## Full Diff
+```diff
+{diff_content}{truncated_msg}
+```
+
+Generate a thorough technical description of these changes:"""
+
+    print('Generating change description...', file=sys.stderr)
+    description = call_gemini(prompt, response_format='text')
+    return description
+
+
+def assess_dimension_direction(
+    change_description: str,
+    dimension_name: str,
+    dimension_label: str
+) -> Dict[str, Any]:
+    """Ask LLM to determine if change is positive or negative for a dimension"""
+
+    direction_prompts = {
+        'coupling': """Does this change INCREASE coupling (negative) or DECREASE coupling (positive)?
+- Positive: Fewer dependencies, removed circular deps, better encapsulation, clearer boundaries
+- Negative: More dependencies, new circular deps, shared state, layer violations
+- Neutral: No significant coupling changes""",
+
+        'test_coverage': """Does this change IMPROVE test coverage (positive) or WORSEN it (negative)?
+- Positive: New tests added, better coverage, improved test quality
+- Negative: Tests removed, production code without tests, tests disabled
+- Neutral: No significant test coverage changes""",
+
+        'abstraction': """Does this change IMPROVE abstractions (positive) or add HARMFUL complexity (negative)?
+- Positive: Good abstractions solving duplication, clearer concepts, reduced complexity
+- Negative: Premature abstraction, over-engineering, unnecessary complexity
+- Neutral: No significant abstraction changes"""
+    }
+
+    prompt = f"""Based on this change description, answer the following question about the {dimension_label} dimension.
+
+Change Description:
+{change_description}
+
+Question:
+{direction_prompts[dimension_name]}
+
+Respond with a JSON object in this exact format:
+{{
+  "direction": "positive" | "negative" | "neutral",
+  "confidence": "high" | "medium" | "low",
+  "reasoning": "Brief explanation (1-2 sentences)",
+  "key_factors": ["factor 1", "factor 2", "..."]
+}}"""
+
+    print(f'  Assessing direction for {dimension_name}...', file=sys.stderr)
+    response = call_gemini(prompt, response_format='json')
+
+    # Parse JSON response
+    json_match = re.search(r'```json\s*([\s\S]*?)\s*```', response)
+    if not json_match:
+        json_match = re.search(r'```\s*([\s\S]*?)\s*```', response)
+
+    json_str = json_match.group(1) if json_match else response
+    return json.loads(json_str.strip())
+
+
+def analyze_with_embeddings(
+    change_description: str,
+    dimension_name: str,
+    dimension_label: str
+) -> Dict[str, Any]:
+    """Analyze dimension using embedding similarity and LLM direction assessment"""
+
+    try:
+        # Generate embedding for change description
+        print(f'  Generating embedding for change description...', file=sys.stderr)
+        change_embedding = generate_embedding(change_description, task_type="RETRIEVAL_QUERY")
+
+        # Load dimension embedding
+        dimension_embedding_path = DIMENSION_EMBEDDINGS_DIR / f'{dimension_name}.json'
+        print(f'  Loading dimension embedding: {dimension_name}...', file=sys.stderr)
+        dimension_embedding, _ = load_embedding(str(dimension_embedding_path))
+
+        # Calculate similarity (0 to 1)
+        similarity = cosine_similarity(change_embedding, dimension_embedding)
+        print(f'  Similarity to {dimension_name}: {similarity:.3f}', file=sys.stderr)
+
+        # Get direction assessment from LLM
+        direction_result = assess_dimension_direction(
+            change_description,
+            dimension_name,
+            dimension_label
+        )
+
+        # Calculate score based on similarity and direction
+        # Similarity of 0.0-1.0 maps to magnitude of 0-5
+        magnitude = similarity * 5.0
+
+        # Apply direction
+        direction = direction_result['direction']
+        if direction == 'positive':
+            score = magnitude
+        elif direction == 'negative':
+            score = -magnitude
+        else:  # neutral
+            score = 0.0
+
+        # Round to nearest 0.5
+        score = round(score * 2) / 2
+
+        # Clamp to -5 to +5
+        score = max(-5.0, min(5.0, score))
+
         return {
-            'dimension': dimension,
-            'score': 0,
-            'reasoning': f'Analysis failed: HTTP {e.code}',
-            'key_factors': [],
-            'confidence': 'low',
-            'error': True
+            'dimension': dimension_name,
+            'score': score,
+            'reasoning': direction_result['reasoning'],
+            'key_factors': direction_result['key_factors'],
+            'confidence': direction_result['confidence'],
+            'similarity': round(similarity, 3)
         }
+
     except Exception as e:
-        print(f'Error analyzing {dimension}: {e}', file=sys.stderr)
+        print(f'Error analyzing {dimension_name}: {e}', file=sys.stderr)
         return {
-            'dimension': dimension,
+            'dimension': dimension_name,
             'score': 0,
             'reasoning': f'Analysis failed: {str(e)}',
             'key_factors': [],
@@ -174,7 +276,6 @@ Please analyze this git diff according to the instructions above and return ONLY
 
 def main():
     """Main execution"""
-    # Parse arguments
     args = sys.argv[1:]
 
     if len(args) != 2:
@@ -195,13 +296,22 @@ def main():
         print('No changes detected between the specified refs.', file=sys.stderr)
         sys.exit(1)
 
-    # Analyze each dimension
+    # Generate comprehensive change description
+    change_description = generate_change_description(diff, stats)
+
+    # Save change description for debugging
+    debug_file = SCRIPT_DIR / 'last-change-description.txt'
+    debug_file.write_text(change_description, encoding='utf-8')
+    print(f'Change description saved to: {debug_file}', file=sys.stderr)
+
+    # Analyze each dimension using embeddings
     results = {
         'metadata': {
             'ref_a': ref_a,
             'ref_b': ref_b,
             'analyzed_at': datetime.utcnow().isoformat() + 'Z',
-            'model': MODEL
+            'model': MODEL,
+            'method': 'embedding-similarity'
         },
         'dimensions': {},
         'summary': {
@@ -212,10 +322,9 @@ def main():
 
     for dimension_info in DIMENSIONS:
         name = dimension_info['name']
-        file = dimension_info['file']
-        print(f'Analyzing {name}...', file=sys.stderr)
-        prompt = load_prompt(file)
-        analysis = analyze_dimension(name, prompt, diff, stats)
+        label = dimension_info['label']
+        print(f'\nAnalyzing {label}...', file=sys.stderr)
+        analysis = analyze_with_embeddings(change_description, name, label)
         results['dimensions'][name] = analysis
 
     # Calculate summary
