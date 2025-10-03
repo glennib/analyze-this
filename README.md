@@ -27,21 +27,23 @@ Each dimension is scored from **-5 to +5** for spider graph visualization.
 ### Prerequisites
 
 - Python 3.7+ installed
-- Anthropic API key
+- Google Gemini API key ([Get one here](https://aistudio.google.com/app/apikey))
 
 ### Environment Variables
 
-Set your Anthropic API key:
+Set your Google Gemini API key:
 
 ```bash
-export ANTHROPIC_API_KEY=your-api-key-here
+export GEMINI_API_KEY=your-api-key-here
 ```
 
-Optional: Specify a different model (defaults to `claude-sonnet-4-20250514`):
+Optional: Specify a different model (defaults to `gemini-2.0-flash-exp`):
 
 ```bash
-export MODEL=claude-sonnet-4-20250514
+export MODEL=gemini-2.0-flash-exp
 ```
+
+Available models: `gemini-2.0-flash-exp`, `gemini-1.5-pro`, `gemini-1.5-flash`
 
 ## Output Format
 
@@ -53,7 +55,7 @@ The script outputs JSON to stdout:
     "ref_a": "main",
     "ref_b": "feature-branch",
     "analyzed_at": "2025-10-03T12:00:00.000Z",
-    "model": "claude-sonnet-4-20250514"
+    "model": "gemini-2.0-flash-exp"
   },
   "dimensions": {
     "coupling": {
@@ -89,7 +91,7 @@ The script outputs JSON to stdout:
 
 1. Extracts git diff between two refs
 2. Loads detailed analysis prompts for each dimension
-3. Sends diff + prompt to Claude API for analysis
+3. Sends diff + prompt to Google Gemini API for analysis
 4. Aggregates scores into JSON output
 5. Output can be used for spider graph visualization
 

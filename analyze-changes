@@ -24,8 +24,8 @@ import urllib.request
 import urllib.error
 
 # Configuration
-ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY')
-MODEL = os.environ.get('MODEL', 'claude-sonnet-4-20250514')
+GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
+MODEL = os.environ.get('MODEL', 'gemini-2.0-flash-exp')
 
 SCRIPT_DIR = Path(__file__).parent.resolve()
 PROMPTS_DIR = SCRIPT_DIR / 'prompts'
@@ -78,14 +78,14 @@ def load_prompt(prompt_file: str) -> str:
 
 
 def analyze_dimension(dimension: str, prompt: str, diff: str, stats: str) -> Dict[str, Any]:
-    """Call Claude API to analyze diff according to dimension prompt"""
-    if not ANTHROPIC_API_KEY:
-        print('Error: ANTHROPIC_API_KEY environment variable not set', file=sys.stderr)
+    """Call Google Gemini API to analyze diff according to dimension prompt"""
+    if not GEMINI_API_KEY:
+        print('Error: GEMINI_API_KEY environment variable not set', file=sys.stderr)
         sys.exit(1)
 
-    # Truncate diff if too long
-    diff_content = diff[:50000]
-    truncated_msg = '\n... (diff truncated)' if len(diff) > 50000 else ''
+    # Truncate diff if too long (Gemini has large context but still limit for safety)
+    diff_content = diff[:100000]
+    truncated_msg = '\n... (diff truncated)' if len(diff) > 100000 else ''
 
     analysis_prompt = f"""{prompt}
 
@@ -104,30 +104,40 @@ def analyze_dimension(dimension: str, prompt: str, diff: str, stats: str) -> Dic
 Please analyze this git diff according to the instructions above and return ONLY a valid JSON object in the format specified, with no additional text or markdown formatting."""
 
     try:
-        # Prepare API request
+        # Prepare API request for Gemini
         request_data = {
-            'model': MODEL,
-            'max_tokens': 4096,
-            'messages': [{
-                'role': 'user',
-                'content': analysis_prompt
-            }]
+            'contents': [{
+                'parts': [{
+                    'text': analysis_prompt
+                }]
+            }],
+            'generationConfig': {
+                'temperature': 0.2,
+                'maxOutputTokens': 8192,
+                'responseMimeType': 'application/json'
+            }
         }
 
+        # Gemini API URL includes the API key as a query parameter
+        api_url = f'https://generativelanguage.googleapis.com/v1beta/models/{MODEL}:generateContent?key={GEMINI_API_KEY}'
+
         req = urllib.request.Request(
-            'https://api.anthropic.com/v1/messages',
+            api_url,
             data=json.dumps(request_data).encode('utf-8'),
             headers={
-                'Content-Type': 'application/json',
-                'x-api-key': ANTHROPIC_API_KEY,
-                'anthropic-version': '2023-06-01'
+                'Content-Type': 'application/json'
             },
             method='POST'
         )
 
         with urllib.request.urlopen(req) as response:
             data = json.loads(response.read().decode('utf-8'))
-            content = data['content'][0]['text']
+
+            # Extract content from Gemini response
+            if 'candidates' in data and len(data['candidates']) > 0:
+                content = data['candidates'][0]['content']['parts'][0]['text']
+            else:
+                raise Exception('No response from Gemini API')
 
             # Extract JSON from response (handle markdown code blocks if present)
             json_match = re.search(r'```json\s*([\s\S]*?)\s*```', content)
