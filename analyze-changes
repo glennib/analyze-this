@@ -38,7 +38,9 @@ DIMENSION_EMBEDDINGS_DIR = SCRIPT_DIR / 'dimension-descriptions'
 DIMENSIONS = [
     {'name': 'coupling', 'label': 'Module Coupling'},
     {'name': 'test_coverage', 'label': 'Test Coverage'},
-    {'name': 'abstraction', 'label': 'Abstractions and Concepts'}
+    {'name': 'abstraction', 'label': 'Abstraction Quality'},
+    {'name': 'conceptual_weight', 'label': 'Conceptual Weight'},
+    {'name': 'readability', 'label': 'Code Readability'}
 ]
 
 
@@ -172,10 +174,20 @@ def assess_dimension_direction(
 - Negative: Tests removed, production code without tests, tests disabled
 - Neutral: No significant test coverage changes""",
 
-        'abstraction': """Does this change IMPROVE abstractions (positive) or add HARMFUL complexity (negative)?
+        'abstraction': """Does this change IMPROVE abstraction quality (positive) or add HARMFUL complexity (negative)?
 - Positive: Good abstractions solving duplication, clearer concepts, reduced complexity
 - Negative: Premature abstraction, over-engineering, unnecessary complexity
-- Neutral: No significant abstraction changes"""
+- Neutral: No significant abstraction quality changes""",
+
+        'conceptual_weight': """Does this change REDUCE conceptual weight (positive) or INCREASE it (negative)?
+- Positive: Fewer concepts, consolidation, removal of classes/functions/modules, simplification
+- Negative: More concepts, new classes/types/functions, expansion of API surface, concept proliferation
+- Neutral: No significant change in number of concepts""",
+
+        'readability': """Does this change IMPROVE readability (positive) or WORSEN it (negative)?
+- Positive: Better naming, clearer functions, improved structure, easier to understand
+- Negative: Cryptic names, complex logic, confusing structure, harder to understand
+- Neutral: No significant readability changes"""
     }
 
     prompt = f"""Based on this change description, answer the following question about the {dimension_label} dimension.

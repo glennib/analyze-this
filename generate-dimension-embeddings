@@ -25,6 +25,16 @@ echo "Generating dimension embeddings..."
     dimension-descriptions/abstraction.json \
     RETRIEVAL_DOCUMENT
 
+./generate_embeddings.py \
+    dimension-descriptions/conceptual_weight.txt \
+    dimension-descriptions/conceptual_weight.json \
+    RETRIEVAL_DOCUMENT
+
+./generate_embeddings.py \
+    dimension-descriptions/readability.txt \
+    dimension-descriptions/readability.json \
+    RETRIEVAL_DOCUMENT
+
 echo ""
 echo "✓ All dimension embeddings generated successfully!"
 echo ""
@@ -32,3 +42,5 @@ echo "Files created:"
 echo "  - dimension-descriptions/coupling.json"
 echo "  - dimension-descriptions/test_coverage.json"
 echo "  - dimension-descriptions/abstraction.json"
+echo "  - dimension-descriptions/conceptual_weight.json"
+echo "  - dimension-descriptions/readability.json"

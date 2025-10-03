@@ -1,0 +1,91 @@
+Conceptual Weight and Cognitive Load
+
+This dimension measures the number of distinct concepts, entities, and abstractions that developers must understand and keep in their mental model. Conceptual weight represents the cognitive burden of understanding a codebase - how many things you need to learn, remember, and juggle mentally.
+
+The Core Principle: Fewer Concepts Are Better
+
+Every class, type, interface, function, module, constant, and abstraction adds to the conceptual surface area. While some abstractions reduce complexity, every abstraction itself is something to learn. The goal is to minimize the total number of distinct concepts developers must understand.
+
+This dimension rewards simplification, consolidation, and removal. It penalizes proliferation, expansion, and concept bloat. Unlike the abstraction quality dimension which evaluates whether abstractions are good or bad, this dimension simply counts how many concepts exist.
+
+Named Entities and Definitions
+
+Classes and types represent concepts. Each class definition introduces a new thing to understand. Each interface creates a contract to learn. Each type alias adds vocabulary. Each enum defines a set of values. Each struct creates a data structure.
+
+New classes increase conceptual weight. Removed classes reduce it. Merging multiple similar classes into one consolidated class reduces the count. Splitting one class into many increases the count.
+
+Functions and methods are concepts. Each named function is something to know about. Public functions carry more weight than private ones because more developers interact with them. Exported functions affect other modules. Top-level functions expand the global namespace.
+
+Consolidating multiple functions into one reduces concepts. Extracting many small functions from one large function may improve structure but increases conceptual count. The balance depends on whether the extraction creates valuable, reusable concepts or just fragments logic.
+
+Variables and constants add to vocabulary. Global variables and module-level constants are concepts visible across the codebase. Exported constants become part of the shared language. Configuration options multiply as developers must understand each setting.
+
+Module and Package Structure
+
+Each file and module represents an organizational concept. Each package or namespace creates a grouping to understand. Each directory adds structural hierarchy. More files mean more places to look. Deeper hierarchies mean more navigation.
+
+Merging multiple small modules into cohesive larger modules reduces concepts if done well. Splitting one module into many focused modules increases the count but may improve organization. The tradeoff is between conceptual count and conceptual clarity.
+
+Dependencies introduce external concepts. Each new library dependency brings an entire universe of concepts - its APIs, types, patterns, and mental models. Heavy frameworks multiply this effect. Removing dependencies eliminates whole sets of concepts.
+
+API Surface Area and Public Interfaces
+
+Public APIs define what developers interact with. Each public method is a concept. Each configuration option is a choice to understand. Each event type is a message to handle. Each error type is a failure mode to consider.
+
+API expansion increases conceptual load. Adding more methods to do similar things creates options to evaluate. API consolidation - providing the same capabilities through fewer, more general methods - reduces concepts.
+
+Breaking changes that simplify APIs reduce long-term conceptual weight even if they require migration effort. Expanding APIs for backward compatibility increases weight by maintaining old and new ways.
+
+Consolidation and Simplification
+
+Consolidation reduces concepts by combining similar things. Merging duplicate functionality eliminates redundancy. Combining similar classes into a unified pattern reduces the count. Removing dead code eliminates unused concepts.
+
+Inlining abstractions that only have one use removes unnecessary indirection. If a function is called exactly once and doesn't clarify anything, inlining it removes a concept. If a class wraps another class without adding value, removing it simplifies.
+
+Feature removal reduces concepts. Deleting entire capabilities removes all their associated entities. Eliminating optional features reduces the configuration space. Removing alternative ways to do the same thing reduces choices.
+
+Proliferation and Expansion
+
+New features naturally add concepts. Each new capability introduces functions, types, and entities. Large features can add dozens or hundreds of concepts. Small features add fewer but still increase the count.
+
+Abstraction layers add concepts. Creating generic frameworks, plugin systems, or extensibility mechanisms introduces meta-concepts - concepts about how to create concepts. These can be valuable but they increase cognitive load.
+
+Alternative implementations multiply concepts. Having multiple ways to achieve the same goal means learning all the options. Strategy patterns, multiple backends, and pluggable components all increase what developers must understand.
+
+Domain Concepts and Business Logic
+
+Domain entities are core business concepts. User, Order, Product, Payment represent real-world things. Domain services encapsulate business logic. Workflows represent processes. Business rules encode requirements.
+
+Rich domain models may have many concepts because the business domain is complex. However, unnecessary domain concepts bloat the model. Premature domain abstractions add weight without benefit. Over-modeling creates concepts the business doesn't need.
+
+Consolidating domain concepts improves clarity. Realizing that Customer and User are the same thing reduces duplication. Combining similar workflows simplifies the model. Removing speculative domain concepts cleans up the model.
+
+Naming and Vocabulary
+
+Every distinct name adds to the vocabulary developers must learn. Large codebases with hundreds or thousands of named entities have high conceptual weight. Renaming creates temporary weight as both old and new names exist during transition.
+
+Consistent naming reduces cognitive load by using familiar patterns. Inconsistent naming increases load by requiring translation. Overloaded names - same name meaning different things in different contexts - create confusion and increase mental overhead.
+
+Well-chosen names can reduce conceptual weight by making concepts memorable and distinct. Poor names force developers to constantly refer back to definitions, effectively multiplying the cognitive cost.
+
+Public Versus Private Concepts
+
+Public concepts carry more weight than private ones. Public APIs, exported functions, and visible types affect all developers. Private implementation details only affect maintainers of that module.
+
+A codebase with many public concepts has high external cognitive load. A codebase with many private concepts has high maintenance burden but lower impact on users.
+
+Refactoring to reduce public concepts while potentially increasing private concepts can reduce overall burden by containing complexity.
+
+Trade-offs and Balance
+
+Some concept addition is necessary and good. New features require new concepts. Valuable abstractions add concepts but reduce overall complexity. The question is whether the conceptual cost is justified.
+
+Premature abstraction adds concepts without proven value. Speculative generalization creates concepts for hypothetical future needs. Over-engineering multiplies concepts unnecessarily.
+
+The right balance minimizes concepts while maintaining necessary capabilities. Every concept should earn its place by providing clear value. Concepts that don't justify their existence should be eliminated.
+
+The Goal of Low Conceptual Weight
+
+Low conceptual weight means developers can understand the codebase faster, keep more of it in working memory, and make changes confidently. High conceptual weight means longer learning curves, more documentation needed, and higher likelihood of mistakes.
+
+Reducing conceptual weight through consolidation, simplification, and removal makes codebases more maintainable. Every concept removed is one less thing to learn, remember, and maintain.

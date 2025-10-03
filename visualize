@@ -26,11 +26,13 @@ def generate_html(analysis_data: dict, output_path: str):
     scores = []
     colors = []
 
-    dimension_order = ['coupling', 'test_coverage', 'abstraction']
+    dimension_order = ['coupling', 'test_coverage', 'abstraction', 'conceptual_weight', 'readability']
     dimension_labels = {
         'coupling': 'Module Coupling',
         'test_coverage': 'Test Coverage',
-        'abstraction': 'Abstractions'
+        'abstraction': 'Abstraction Quality',
+        'conceptual_weight': 'Conceptual Weight',
+        'readability': 'Code Readability'
     }
 
     for dim_key in dimension_order:
