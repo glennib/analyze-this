@@ -10,16 +10,38 @@ Each dimension is scored from **-5 to +5** for spider graph visualization.
 
 ## Usage
 
+### 1. Analyze Changes
+
 ```bash
-./analyze-changes <git-ref-a> <git-ref-b>
+./analyze-changes <git-ref-a> <git-ref-b> > analysis.json
 ```
 
-### Example
+**Examples:**
+```bash
+./analyze-changes main feature-branch > analysis.json
+./analyze-changes HEAD~10 HEAD > analysis.json
+./analyze-changes v1.0.0 v2.0.0 > analysis.json
+```
+
+### 2. Visualize Results
 
 ```bash
-./analyze-changes main feature-branch
-./analyze-changes HEAD~10 HEAD
-./analyze-changes v1.0.0 v2.0.0
+./visualize analysis.json [output.html]
+```
+
+**Examples:**
+```bash
+./visualize analysis.json report.html
+./visualize analysis.json  # Creates analysis-report.html by default
+```
+
+Then open the HTML file in your browser to see an interactive spider graph with detailed analysis.
+
+### Quick Workflow
+
+```bash
+# Analyze and visualize in one go
+./analyze-changes HEAD~10 HEAD > analysis.json && ./visualize analysis.json
 ```
 
 ## Setup
@@ -89,11 +111,21 @@ The script outputs JSON to stdout:
 
 ## How It Works
 
+### Analysis (`analyze-changes`)
 1. Extracts git diff between two refs
 2. Loads detailed analysis prompts for each dimension
 3. Sends diff + prompt to Google Gemini API for analysis
 4. Aggregates scores into JSON output
-5. Output can be used for spider graph visualization
+
+### Visualization (`visualize`)
+1. Reads JSON analysis output
+2. Generates interactive HTML report with:
+   - **Spider/Radar chart** showing scores across all dimensions
+   - **Detailed breakdown** for each dimension with reasoning
+   - **Color-coded scores** (green = positive, red = negative)
+   - **Key factors** and confidence levels
+3. Uses Chart.js for interactive visualization
+4. Self-contained HTML (works offline after generation)
 
 ## Analysis Prompts
 
@@ -105,10 +137,24 @@ Each dimension has a detailed prompt in `prompts/`:
 
 These prompts provide detailed scoring rubrics and guidelines for the LLM to follow.
 
+## Visualization Features
+
+The generated HTML report includes:
+
+- **Interactive spider/radar chart** with -5 to +5 scale
+- **Color-coded data points** based on score magnitude
+- **Summary statistics** (average and total scores)
+- **Detailed analysis cards** for each dimension
+- **Reasoning and key factors** from the LLM analysis
+- **Confidence levels** for each dimension
+- **Responsive design** that works on all devices
+- **No external dependencies** after generation (works offline)
+
 ## Future Enhancements
 
-- Spider graph visualization generation
 - Support for analyzing multiple commit ranges
-- HTML report output
+- Comparison view (multiple analyses side-by-side)
 - Caching of analysis results
 - Custom dimension prompts
+- Export to PDF
+- Trend analysis over time

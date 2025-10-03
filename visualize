@@ -1,0 +1,425 @@
+#!/usr/bin/env python3
+
+"""
+Visualization Generator for Git History Analysis
+
+Creates an interactive HTML spider/radar chart from analysis JSON output.
+
+Usage: ./visualize <analysis.json> [output.html]
+"""
+
+import sys
+import json
+from pathlib import Path
+from datetime import datetime
+
+
+def generate_html(analysis_data: dict, output_path: str):
+    """Generate HTML visualization with Chart.js radar chart"""
+
+    metadata = analysis_data.get('metadata', {})
+    dimensions = analysis_data.get('dimensions', {})
+    summary = analysis_data.get('summary', {})
+
+    # Extract dimension scores
+    labels = []
+    scores = []
+    colors = []
+
+    dimension_order = ['coupling', 'test_coverage', 'abstraction']
+    dimension_labels = {
+        'coupling': 'Module Coupling',
+        'test_coverage': 'Test Coverage',
+        'abstraction': 'Abstractions'
+    }
+
+    for dim_key in dimension_order:
+        if dim_key in dimensions:
+            dim_data = dimensions[dim_key]
+            labels.append(dimension_labels.get(dim_key, dim_key))
+            score = dim_data.get('score', 0)
+            scores.append(score)
+
+            # Color based on score
+            if score >= 3:
+                colors.append('#22c55e')  # Green - excellent
+            elif score >= 1:
+                colors.append('#84cc16')  # Light green - good
+            elif score > -1:
+                colors.append('#eab308')  # Yellow - neutral
+            elif score > -3:
+                colors.append('#f97316')  # Orange - concerning
+            else:
+                colors.append('#ef4444')  # Red - poor
+
+    # Generate detailed breakdown
+    details_html = ""
+    for dim_key in dimension_order:
+        if dim_key in dimensions:
+            dim_data = dimensions[dim_key]
+            score = dim_data.get('score', 0)
+            reasoning = dim_data.get('reasoning', 'No reasoning provided')
+            key_factors = dim_data.get('key_factors', [])
+            confidence = dim_data.get('confidence', 'unknown')
+
+            score_class = 'positive' if score > 0 else 'negative' if score < 0 else 'neutral'
+
+            details_html += f"""
+            <div class="dimension-detail">
+                <h3>{dimension_labels.get(dim_key, dim_key)}</h3>
+                <div class="score-badge {score_class}">{score:+.1f}</div>
+                <div class="confidence">Confidence: {confidence}</div>
+                <p class="reasoning">{reasoning}</p>
+                <div class="key-factors">
+                    <strong>Key Factors:</strong>
+                    <ul>
+                        {''.join([f'<li>{factor}</li>' for factor in key_factors])}
+                    </ul>
+                </div>
+            </div>
+            """
+
+    html_content = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Git Analysis: {metadata.get('ref_a', 'N/A')} → {metadata.get('ref_b', 'N/A')}</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * {{
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }}
+
+        body {{
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 2rem;
+        }}
+
+        .container {{
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }}
+
+        .header {{
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }}
+
+        .header h1 {{
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }}
+
+        .header .refs {{
+            font-size: 1.2rem;
+            opacity: 0.9;
+            font-family: 'Courier New', monospace;
+        }}
+
+        .header .metadata {{
+            margin-top: 1rem;
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }}
+
+        .summary {{
+            background: #f8fafc;
+            padding: 2rem;
+            text-align: center;
+            border-bottom: 2px solid #e2e8f0;
+        }}
+
+        .summary h2 {{
+            color: #1e293b;
+            margin-bottom: 1rem;
+        }}
+
+        .summary-stats {{
+            display: flex;
+            justify-content: center;
+            gap: 3rem;
+            margin-top: 1rem;
+        }}
+
+        .stat {{
+            text-align: center;
+        }}
+
+        .stat-value {{
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #667eea;
+        }}
+
+        .stat-label {{
+            color: #64748b;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }}
+
+        .chart-container {{
+            padding: 3rem;
+            background: white;
+        }}
+
+        .chart-wrapper {{
+            position: relative;
+            max-width: 600px;
+            margin: 0 auto;
+        }}
+
+        .details {{
+            padding: 2rem;
+            background: #f8fafc;
+        }}
+
+        .details h2 {{
+            color: #1e293b;
+            margin-bottom: 2rem;
+            text-align: center;
+        }}
+
+        .dimension-detail {{
+            background: white;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }}
+
+        .dimension-detail h3 {{
+            color: #1e293b;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }}
+
+        .score-badge {{
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 1rem;
+            font-weight: bold;
+        }}
+
+        .score-badge.positive {{
+            background: #dcfce7;
+            color: #166534;
+        }}
+
+        .score-badge.negative {{
+            background: #fee2e2;
+            color: #991b1b;
+        }}
+
+        .score-badge.neutral {{
+            background: #fef3c7;
+            color: #854d0e;
+        }}
+
+        .confidence {{
+            color: #64748b;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }}
+
+        .reasoning {{
+            color: #475569;
+            line-height: 1.6;
+            margin-bottom: 1rem;
+        }}
+
+        .key-factors {{
+            background: #f1f5f9;
+            padding: 1rem;
+            border-radius: 8px;
+        }}
+
+        .key-factors strong {{
+            color: #334155;
+            display: block;
+            margin-bottom: 0.5rem;
+        }}
+
+        .key-factors ul {{
+            list-style-position: inside;
+            color: #475569;
+        }}
+
+        .key-factors li {{
+            margin-bottom: 0.5rem;
+        }}
+
+        .footer {{
+            text-align: center;
+            padding: 2rem;
+            color: #64748b;
+            font-size: 0.9rem;
+        }}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Git Change Analysis</h1>
+            <div class="refs">{metadata.get('ref_a', 'N/A')} → {metadata.get('ref_b', 'N/A')}</div>
+            <div class="metadata">
+                Analyzed: {metadata.get('analyzed_at', 'N/A')} | Model: {metadata.get('model', 'N/A')}
+            </div>
+        </div>
+
+        <div class="summary">
+            <h2>Summary</h2>
+            <div class="summary-stats">
+                <div class="stat">
+                    <div class="stat-value">{summary.get('average_score', 0):+.2f}</div>
+                    <div class="stat-label">Average Score</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">{summary.get('total_score', 0):+.2f}</div>
+                    <div class="stat-label">Total Score</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <div class="chart-wrapper">
+                <canvas id="radarChart"></canvas>
+            </div>
+        </div>
+
+        <div class="details">
+            <h2>Detailed Analysis</h2>
+            {details_html}
+        </div>
+
+        <div class="footer">
+            Generated by analyze-this | {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+        </div>
+    </div>
+
+    <script>
+        const ctx = document.getElementById('radarChart').getContext('2d');
+
+        const data = {{
+            labels: {json.dumps(labels)},
+            datasets: [{{
+                label: 'Change Score',
+                data: {json.dumps(scores)},
+                fill: true,
+                backgroundColor: 'rgba(102, 126, 234, 0.2)',
+                borderColor: 'rgb(102, 126, 234)',
+                pointBackgroundColor: {json.dumps(colors)},
+                pointBorderColor: '#fff',
+                pointHoverBackgroundColor: '#fff',
+                pointHoverBorderColor: 'rgb(102, 126, 234)',
+                pointRadius: 6,
+                pointHoverRadius: 8,
+                borderWidth: 2
+            }}]
+        }};
+
+        const config = {{
+            type: 'radar',
+            data: data,
+            options: {{
+                responsive: true,
+                maintainAspectRatio: true,
+                scales: {{
+                    r: {{
+                        min: -5,
+                        max: 5,
+                        ticks: {{
+                            stepSize: 1,
+                            callback: function(value) {{
+                                return value;
+                            }}
+                        }},
+                        pointLabels: {{
+                            font: {{
+                                size: 14,
+                                weight: 'bold'
+                            }}
+                        }},
+                        grid: {{
+                            color: '#e2e8f0'
+                        }},
+                        angleLines: {{
+                            color: '#e2e8f0'
+                        }}
+                    }}
+                }},
+                plugins: {{
+                    legend: {{
+                        display: false
+                    }},
+                    tooltip: {{
+                        callbacks: {{
+                            label: function(context) {{
+                                return context.label + ': ' + context.parsed.r.toFixed(1);
+                            }}
+                        }}
+                    }}
+                }}
+            }}
+        }};
+
+        new Chart(ctx, config);
+    </script>
+</body>
+</html>"""
+
+    # Write HTML file
+    Path(output_path).write_text(html_content, encoding='utf-8')
+    print(f'Visualization created: {output_path}', file=sys.stderr)
+
+
+def main():
+    """Main execution"""
+    args = sys.argv[1:]
+
+    if len(args) < 1:
+        print('Usage: ./visualize <analysis.json> [output.html]', file=sys.stderr)
+        print('Example: ./visualize analysis.json report.html', file=sys.stderr)
+        sys.exit(1)
+
+    input_file = args[0]
+    output_file = args[1] if len(args) > 1 else 'analysis-report.html'
+
+    # Read analysis JSON
+    try:
+        with open(input_file, 'r') as f:
+            analysis_data = json.load(f)
+    except FileNotFoundError:
+        print(f'Error: File not found: {input_file}', file=sys.stderr)
+        sys.exit(1)
+    except json.JSONDecodeError as e:
+        print(f'Error: Invalid JSON in {input_file}: {e}', file=sys.stderr)
+        sys.exit(1)
+
+    # Generate HTML
+    generate_html(analysis_data, output_file)
+
+    print(f'\nVisualization ready! Open in browser:', file=sys.stderr)
+    print(f'  file://{Path(output_file).resolve()}', file=sys.stderr)
+
+
+if __name__ == '__main__':
+    try:
+        main()
+    except Exception as e:
+        print(f'Fatal error: {e}', file=sys.stderr)
+        sys.exit(1)
