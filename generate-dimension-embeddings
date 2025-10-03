@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+
+# Generate embeddings for all dimension descriptions
+# Creates .json files in the dimension-descriptions directory
+
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
+
+echo "Generating dimension embeddings..."
+
+./generate_embeddings.py \
+    dimension-descriptions/coupling.txt \
+    dimension-descriptions/coupling.json \
+    RETRIEVAL_DOCUMENT
+
+./generate_embeddings.py \
+    dimension-descriptions/test_coverage.txt \
+    dimension-descriptions/test_coverage.json \
+    RETRIEVAL_DOCUMENT
+
+./generate_embeddings.py \
+    dimension-descriptions/abstraction.txt \
+    dimension-descriptions/abstraction.json \
+    RETRIEVAL_DOCUMENT
+
+echo ""
+echo "✓ All dimension embeddings generated successfully!"
+echo ""
+echo "Files created:"
+echo "  - dimension-descriptions/coupling.json"
+echo "  - dimension-descriptions/test_coverage.json"
+echo "  - dimension-descriptions/abstraction.json"
