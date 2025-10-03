@@ -26,7 +26,7 @@ Each dimension is scored from **-5 to +5** for spider graph visualization.
 
 ### Prerequisites
 
-- Node.js installed
+- Python 3.7+ installed
 - Anthropic API key
 
 ### Environment Variables
