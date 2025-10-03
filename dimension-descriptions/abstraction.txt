@@ -1,0 +1,107 @@
+Abstraction and Conceptual Complexity
+
+This dimension measures the number, quality, and appropriateness of abstractions in code. Abstractions hide complexity and create reusable concepts, but premature or excessive abstraction adds unnecessary complexity. The right level of abstraction makes code more maintainable and understandable.
+
+The Nature of Abstraction
+
+Abstraction involves hiding implementation details behind interfaces, creating general concepts from specific instances, and building reusable components. Good abstractions solve real problems, have clear responsibilities, and make code easier to understand and modify.
+
+Bad abstractions include premature optimization before patterns emerge, over-engineering with excessive layers, leaky abstractions where implementation details bleed through, and wrong abstractions that force inappropriate patterns.
+
+The Rule of Three suggests waiting until a pattern appears three times before abstracting. Abstracting on the first or second occurrence often creates premature abstractions. Duplication is better than the wrong abstraction.
+
+Classes, Interfaces, and Types
+
+Classes and types create new concepts in code. Well-named, focused classes with single responsibilities add clarity. God classes with too many responsibilities add confusion.
+
+Interfaces, protocols, and contracts define abstract boundaries. Appropriate interfaces decouple implementations from contracts. Interfaces with only a single implementation often indicate premature abstraction.
+
+Abstract base classes and inheritance hierarchies create vertical abstractions. Shallow hierarchies with clear specialization work well. Deep inheritance hierarchies with many levels create the yo-yo problem where understanding requires jumping up and down the hierarchy.
+
+Traits, mixins, and composition provide horizontal abstraction. Composition over inheritance often yields more flexible designs.
+
+Type aliases and type definitions can clarify or complicate. Meaningful types representing domain concepts add clarity. Generic wrapper types can obscure meaning.
+
+Functions and Methods
+
+Function extraction creates procedural abstractions. Extracting duplicated code into well-named functions reduces repetition. Extracting complex logic into descriptive functions improves readability.
+
+Premature function extraction without duplication adds unnecessary indirection. Functions should have clear, single responsibilities. Functions doing too many things need decomposition.
+
+Pure functions without side effects create clearer abstractions. Side effects and hidden state make functions harder to understand and test.
+
+Helper and utility functions reduce duplication and create reusable building blocks. Well-organized utilities improve productivity.
+
+Design Patterns
+
+Design patterns provide proven solutions to recurring problems. The strategy pattern handles multiple algorithms, factory pattern abstracts object creation, observer pattern manages events, decorator pattern extends behavior, repository pattern abstracts data access.
+
+Appropriate patterns solve real complexity and make code more testable and maintainable. Over-engineered patterns for simple cases add unnecessary complexity. Cargo-cult pattern application without understanding creates confusion. Wrong patterns for the problem make code worse.
+
+Anti-patterns indicate problematic abstractions. Singleton abuse creates global state. God objects violate single responsibility. Excessive inheritance creates brittle hierarchies. Circular dependencies indicate poor boundaries. Feature envy shows misplaced functionality.
+
+Conceptual and Cyclomatic Complexity
+
+Cyclomatic complexity measures code paths through branches and loops. High complexity indicates hard-to-understand code. Reducing complexity through abstraction improves maintainability.
+
+Nesting levels affect readability. Deep nesting with many levels makes code hard to follow. Extracting nested logic into functions flattens structure.
+
+Function length correlates with complexity. Shorter focused functions are easier to understand than long procedural code.
+
+Parameter count affects interface complexity. Functions with many parameters have complex interfaces. Reducing parameters through objects or builder patterns simplifies interfaces.
+
+Boolean parameters often indicate missing abstractions. Replacing boolean flags with strategy patterns or enums creates clearer intent.
+
+Duplication vs Abstraction Trade-offs
+
+Code duplication signals potential abstraction opportunities. Extracting duplicated code found in three or more places into shared abstractions reduces repetition.
+
+Abstraction with only one or two uses indicates premature abstraction. The duplication hasn't occurred enough to establish a pattern.
+
+Sometimes removing abstraction and inlining code improves clarity. Unnecessary wrapper classes and one-line delegating methods add indirection without value. Removing harmful abstractions simplifies code.
+
+The wrong abstraction is worse than duplication. Bad abstractions become embedded in many places and are harder to change than duplicated code.
+
+Domain Modeling and Conceptual Clarity
+
+Domain-driven design emphasizes modeling domain concepts in code. Value objects encapsulate domain concepts. Entities have identity and lifecycle. Domain services organize business logic.
+
+Ubiquitous language uses domain terminology in code. Classes, functions, and variables named with domain terms create clarity. Generic technical names obscure domain meaning.
+
+Clear domain models make business logic explicit. Confused domain concepts mixing unrelated concerns create complexity.
+
+Architectural Boundaries
+
+Layer separation divides presentation, business logic, and data access. Clear boundaries between layers improve organization. Blurred boundaries create tangled architectures.
+
+Module boundaries define interfaces between subsystems. Well-defined module interfaces enable independent development. Violated boundaries create coupling.
+
+Ports and adapters, hexagonal architecture, and clean architecture emphasize abstraction at system boundaries. These patterns isolate core logic from infrastructure concerns.
+
+Abstraction Removal and Simplification
+
+Removing abstraction can improve code. Dead code removal eliminates unused abstractions. Fixing YAGNI violations removes speculative features built prematurely. Simplifying over-engineered code reduces unnecessary complexity.
+
+Inlining simple one-line wrapper methods eliminates needless indirection. Removing unused interfaces and classes reduces conceptual overhead.
+
+However, removing necessary abstractions creates problems. Deleting useful shared code creates duplication. Removing important boundaries couples concerns.
+
+Configuration and Generalization
+
+Making hardcoded values configurable adds flexibility but also complexity. Useful configuration solves real needs. Over-configuration creates YAGNI problems.
+
+Generic implementations with type parameters enable reuse. Well-applied generics reduce duplication. Unnecessary generic wrappers add complexity without benefit.
+
+Plugin systems and extensibility points enable extension without modification. Appropriate plugin architectures support genuine needs. Premature plugin systems over-engineer.
+
+Feature flags control runtime behavior and enable gradual rollouts. They add configuration complexity but enable flexibility.
+
+Language Idioms and Patterns
+
+Different languages have different idiomatic abstractions. Iterators and generators in Python and JavaScript. Traits and impl blocks in Rust. Higher-order functions in functional languages. Decorators and annotations in Python and Java. Extension methods in C# and Kotlin.
+
+Idiomatic language features feel natural and leverage language strengths. Fighting language idioms creates awkward code. Using language features appropriately improves clarity.
+
+The Goal of Appropriate Abstraction
+
+The right abstractions hide complexity, reduce duplication, improve testability, and make code more maintainable. They emerge from real patterns, have clear names, follow language conventions, and reduce cognitive load. Too few abstractions create duplication and complexity. Too many abstractions create over-engineering and confusion. Balance is key.

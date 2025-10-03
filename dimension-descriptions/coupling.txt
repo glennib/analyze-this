@@ -1,0 +1,55 @@
+Module Coupling and Dependencies
+
+This dimension measures how interconnected and dependent different modules, components, and parts of a codebase are on each other. Module coupling refers to the degree of interdependence between software modules, representing how tightly bound they are together.
+
+Dependency Analysis and Import Relationships
+
+Module dependencies are created through import statements, require directives, include declarations, and other mechanisms that establish relationships between code units. When one module depends on another, it creates a coupling relationship. Cross-module dependencies increase coupling, while isolated modules with minimal dependencies represent loose coupling.
+
+Circular dependencies occur when module A depends on module B, and module B depends back on module A, either directly or through a chain of intermediate modules. These circular relationships create tight coupling and make code harder to understand, test, and modify. Breaking circular dependencies significantly improves code architecture.
+
+Dependency direction matters greatly. When a dependency reverses direction - what was A depending on B becomes B depending on A - this can indicate problematic refactoring or architectural drift. Bidirectional dependencies where modules depend on each other in both directions represent particularly tight coupling.
+
+Fan-out measures how many other modules a given module depends on or calls into. High fan-out means a module touches many other parts of the system. Fan-in measures how many other modules depend on or call into a specific module. High fan-in to a single module can create bottlenecks and fragility.
+
+Shared State and Global Variables
+
+Shared mutable state represents one of the strongest forms of coupling. When multiple modules access and modify the same global variables, they become tightly coupled through this shared state. Changes to the shared data can have far-reaching effects across all modules that touch it.
+
+Global variables create implicit coupling that isn't visible in function signatures or module interfaces. Singleton patterns, while sometimes useful, often introduce global state through the back door. Service locators and global registries similarly create hidden coupling.
+
+Dependency injection, where dependencies are passed as parameters rather than accessed globally, reduces coupling. It makes dependencies explicit and allows for easier testing and modification. Parameter passing creates clearer boundaries than global access.
+
+Temporal coupling occurs when operations must be performed in a specific order, with implicit state dependencies between them. This creates fragile code where the order of operations matters in non-obvious ways.
+
+Interface and API Design
+
+Public APIs define the contract between modules. Expanding API surface area increases the points of contact between modules, increasing coupling. API simplification reduces these contact points.
+
+Abstraction layers like interfaces, protocols, and contracts can reduce coupling by allowing modules to depend on abstractions rather than concrete implementations. This allows implementations to change without affecting dependent modules.
+
+Breaking changes that require multiple modules to update together indicate tight coupling. Well-designed APIs allow modules to evolve independently.
+
+Encapsulation and Data Structure Access
+
+Direct access to internal data structures creates tight coupling. When module A directly manipulates the internal fields or data of module B, they become tightly bound. Encapsulation through getters, setters, and methods creates looser coupling.
+
+Data Transfer Objects (DTOs) and interface types for data exchange establish clear boundaries. They allow internal representations to change without affecting other modules.
+
+Shared complex mutable types passed between modules create coupling through data structure. Immutable data structures reduce this coupling by preventing action-at-a-distance modifications.
+
+Feature envy occurs when a method in one module extensively accesses data from another module, indicating potential coupling problems and misplaced functionality.
+
+Architectural Boundaries and Layering
+
+Well-architected systems have clear layers: presentation layer, business logic layer, data access layer. Layer violations, where upper layers are skipped (like UI directly accessing database), create problematic coupling.
+
+Separation of concerns ensures different responsibilities live in different modules. Violating these boundaries couples unrelated concerns together.
+
+Accessing internal implementation packages or private modules creates tight coupling that's likely to break when implementations change. Respecting module boundaries and only using public interfaces maintains loose coupling.
+
+Cohesion vs Coupling
+
+While this dimension focuses on coupling between modules, it relates to cohesion within modules. Highly cohesive modules with focused responsibilities tend to have lower coupling. Modules doing too many unrelated things often have many dependencies.
+
+Low coupling allows modules to be understood, tested, and modified independently. High coupling creates rigid, fragile systems where changes ripple across module boundaries. The goal is to minimize coupling while maintaining necessary communication between modules.

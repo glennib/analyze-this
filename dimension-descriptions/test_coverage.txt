@@ -1,0 +1,83 @@
+Test Coverage and Testing Quality
+
+This dimension measures how thoroughly code is tested and the quality of those tests. Test coverage encompasses not just the quantity of tests, but their comprehensiveness, maintainability, and effectiveness at catching bugs.
+
+Test-to-Production Code Ratios
+
+The ratio of test code to production code provides a quantitative signal about testing investment. Higher ratios generally indicate more thorough testing, though quality matters more than raw quantity. When new production code is added with proportional or greater test code, coverage improves. When production code grows without corresponding tests, coverage degrades.
+
+Test lines of code, test files, and test cases all contribute to understanding coverage breadth. Removing tests while keeping production code indicates declining coverage. Removing both tests and dead code together is neutral - the coverage ratio remains constant.
+
+Types and Levels of Tests
+
+The testing pyramid guides balanced test distribution: many fast unit tests at the base, fewer integration tests in the middle, and minimal slow end-to-end tests at the top.
+
+Unit tests verify individual functions, methods, or classes in isolation. They test single units of functionality, run quickly, and form the foundation of a test suite. Pure unit tests with good isolation through mocking enable independent testing.
+
+Integration tests verify that multiple components work together correctly. They test interactions between modules, API contracts, database operations, and cross-boundary communication. Integration tests catch interface mismatches and integration bugs that unit tests miss.
+
+End-to-end tests verify complete user flows through the entire system. They test from user interface through business logic to data persistence. While valuable for critical paths, over-reliance on slow, brittle end-to-end tests indicates poor test pyramid balance.
+
+Component tests verify UI components, widgets, and interface elements. Frontend testing requires testing rendering, user interactions, and component behavior.
+
+Test Quality and Depth
+
+Comprehensive test suites cover not just happy paths but edge cases, error conditions, boundary values, null inputs, empty collections, and exceptional scenarios. Edge case testing demonstrates thoroughness.
+
+Meaningful assertions verify expected behavior. Tests without assertions or with only weak truthy checks provide little value. Multiple specific assertions verify different aspects of behavior.
+
+Error handling and exception paths need testing as much as success paths. Untested error handling means bugs lurk in failure scenarios. Exception testing ensures graceful degradation.
+
+Parameterized tests and property-based tests efficiently cover multiple input scenarios. They generate test cases systematically rather than manually enumerating examples.
+
+Test Coverage Breadth
+
+New functionality must have corresponding tests. New public functions, API endpoints, UI components, and business logic without tests represent coverage gaps. Every new feature should include test coverage.
+
+Modified production code should trigger test updates. When function signatures change, behavior evolves, or logic is refactored without test changes, coverage has regressed. Tests must stay synchronized with production code.
+
+Test coverage tools measure line coverage, branch coverage, and path coverage. These metrics quantify what percentage of code is executed during testing. Higher percentages indicate better coverage, though 100% coverage doesn't guarantee bug-free code.
+
+Test Maintenance and Reliability
+
+Test quality includes maintainability. Well-structured tests with clear arrange-act-assert patterns, descriptive names, and helper functions remain valuable over time. Tests tightly coupled to implementation details become brittle.
+
+Flaky tests that pass and fail non-deterministically erode confidence. They often stem from timing issues, shared state, or external dependencies. Fixing flaky tests by removing sleeps, using proper waits, and improving isolation strengthens the suite.
+
+Disabled, skipped, or commented-out tests represent coverage debt. Each test marked as skip or TODO indicates untested functionality. Removing skip markers and enabling tests improves coverage.
+
+Broken tests that fail due to test bugs rather than production bugs waste time. Fixing test bugs improves suite reliability.
+
+Test duplication makes maintenance harder. Extracting test helpers, fixtures, and factory functions reduces duplication while maintaining coverage.
+
+Test Infrastructure and Tooling
+
+Testing frameworks, assertion libraries, and mocking tools enable effective testing. Adding new testing capabilities improves infrastructure. Test data builders, factories, and fixtures simplify test setup.
+
+Code coverage tooling provides visibility into gaps. Integration with continuous integration ensures tests run automatically. Test runners, parallel execution, and fast feedback loops improve developer experience.
+
+Mock and stub frameworks enable isolation. Dependency injection for testability improves architecture. Test doubles, fakes, and in-memory implementations enable fast, reliable tests.
+
+Coverage Regression and Gaps
+
+Coverage regression occurs when production code changes outpace test updates. Complex business logic modified without test changes represents serious regression. Security-critical, safety-critical, or high-risk code without tests poses significant danger.
+
+Coverage gaps appear as untested code paths, missing error case coverage, or incomplete feature testing. Identifying and filling gaps improves overall quality.
+
+Legacy code receives special consideration. Adding tests to previously untested legacy code significantly improves coverage and enables safe refactoring.
+
+Test Smells and Anti-Patterns
+
+Trivial tests that only verify getters, setters, or obvious behavior provide little value. Tests should verify meaningful behavior.
+
+Tests without assertions don't verify anything. Every test needs checks.
+
+Only testing happy paths while ignoring error cases leaves bugs hiding in edge cases.
+
+Excessive mocking that tests mock behavior rather than real code reduces test value.
+
+Tests that require specific global state or run order indicate coupling and fragility.
+
+The Goal of Testing
+
+High-quality test coverage enables confident refactoring, catches regressions early, documents expected behavior, and reduces production bugs. Comprehensive, maintainable, well-structured tests form a safety net that makes development faster and safer.
